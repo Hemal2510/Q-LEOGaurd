@@ -7,6 +7,7 @@ import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import { Earth } from '../components/Earth';
 import { Satellites } from '../components/Satellites';
 import { OrbitPaths } from '../components/OrbitPaths';
+import { PlatformUI } from '../overlays/PlatformUI';
 
 /**
  * SceneLoop — invisible component that ticks the simulation engine
@@ -115,6 +116,7 @@ export function OrbitalCanvas() {
                     enableDamping
                     />
             </Canvas>
+            <PlatformUI />
         </div>
     );
 }
