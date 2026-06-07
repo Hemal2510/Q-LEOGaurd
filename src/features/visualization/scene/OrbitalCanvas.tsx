@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
+import { SpaceBackground } from '../components/SpaceBackground';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import { Earth } from '../components/Earth';
 import { Satellites } from '../components/Satellites';
@@ -10,17 +11,14 @@ import { OrbitPaths } from '../components/OrbitPaths';
 import { PlatformUI } from '../overlays/PlatformUI';
 
 /**
- * SceneLoop — invisible component that ticks the simulation engine
- * in sync with R3F's render loop every frame.
- * Forces R3F to treat the scene as continuously dirty so satellite
- * positions update visually without React state re-renders.
+ * SceneLoop — drives the simulation engine every R3F frame.
+ * Keeps the scene continuously dirty so satellite positions
+ * and Earth rotation update without React state re-renders.
  */
 function SceneLoop() {
     const engine = SimulationEngine.getInstance();
 
     useFrame(() => {
-        // Read satellites every frame — signals R3F the scene is dirty
-        // Actual propagation runs inside SimulationEngine's own rAF loop
         engine.getSatellites();
     });
 
@@ -29,27 +27,32 @@ function SceneLoop() {
 
 /**
  * OrbitalCanvas — root Three.js scene for Q-LEOGuard.
- * Owns the R3F Canvas, camera configuration, lighting rig,
- * and all visualization components.
  *
  * Architecture:
  *  Canvas (R3F)
- *  ├── SceneLoop        — keeps scene rendering every frame
- *  ├── Stars            — background starfield (drei)
- *  ├── Earth            — sphere with atmosphere layers
- *  ├── Satellites       — live satellite position markers
- *  ├── OrbitPaths       — precomputed orbital trail lines
- *  ├── OrbitControls    — mouse drag / zoom / pan (drei)
+ *  ├── SceneLoop        — drives engine per frame
+ *  ├── SpaceBackground  — procedural deep space skybox
+ *  ├── Earth            — NASA textured sphere with day/night shader
+ *  ├── Satellites       — live position markers
+ *  ├── OrbitPaths       — precomputed RK4 orbital trails
+ *  ├── OrbitControls    — mouse rotate / zoom / pan
  *  └── Lights           — ambient + directional sun rig
+ *  PlatformUI           — HTML overlay panels (outside Canvas)
  */
 export function OrbitalCanvas() {
     const engine = SimulationEngine.getInstance();
 
     useEffect(() => {
-        // Start simulation loop on mount
-        engine.togglePause();
+        /**
+         * StrictMode in React 18 mounts components twice in dev.
+         * Guard against double-toggle by checking state before acting.
+         * Without this guard: mount → start → unmount → stop → remount → start
+         * but cleanup already fired so the loop never recovers.
+         */
+        if (engine.getState().isPaused) {
+            engine.togglePause();
+        }
         return () => {
-            // Stop loop on unmount — prevents ghost rAF after component unmounts
             if (!engine.getState().isPaused) {
                 engine.togglePause();
             }
@@ -57,7 +60,7 @@ export function OrbitalCanvas() {
     }, []);
 
     return (
-        <div style={{ width: '100%', height: '100%', background: '#060d1a' }}>
+        <div style={{ width: '100%', height: '100%', background: '#060d1a', position: 'relative' }}>
             <Canvas
                 camera={{
                     position: [0, 15, 35],
@@ -65,7 +68,6 @@ export function OrbitalCanvas() {
                     near: 0.1,
                     far: 5000,
                 }}
-
                 gl={{
                     antialias: true,
                     alpha: false,
@@ -75,26 +77,19 @@ export function OrbitalCanvas() {
                 {/* Simulation driver */}
                 <SceneLoop />
 
-                {/* Background starfield */}
-                <Stars
-                    radius={300}
-                    depth={60}
-                    count={4000}
-                    factor={3}
-                    fade
-                    speed={0}
-                />
+                {/* Deep space background */}
+                <SpaceBackground />
 
-                {/* Lighting rig */}
-                <ambientLight intensity={0.18} color="#223344" />
+                {/* Lighting rig — sun from upper right, dim fill opposite */}
+                <ambientLight intensity={0.25} color="#334455" />
                 <directionalLight
                     position={[5, 3, 5]}
-                    intensity={2.2}
+                    intensity={2.8}
                     color="#ffeedd"
                 />
                 <directionalLight
                     position={[-4, -2, -3]}
-                    intensity={0.4}
+                    intensity={0.3}
                     color="#1a4a8a"
                 />
 
@@ -114,8 +109,10 @@ export function OrbitalCanvas() {
                     rotateSpeed={0.4}
                     dampingFactor={0.08}
                     enableDamping
-                    />
+                />
             </Canvas>
+
+            {/* HTML overlay — outside Canvas so pointer events work cleanly */}
             <PlatformUI />
         </div>
     );

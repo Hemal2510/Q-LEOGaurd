@@ -7,7 +7,7 @@ export const SIM_DEFAULT_CONFIG = {
     // Max step size for RK4 propagation in seconds
     maxTimeStep: 60,
     // Minimum time step size
-    minTimeStep: 0.1,
+    minTimeStep: 0.001,
     // Default play/pause state
     startPaused: false,
     // Default timescale (1 second real time = 60 seconds simulation time)
