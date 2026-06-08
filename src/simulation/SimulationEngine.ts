@@ -122,6 +122,17 @@ export class SimulationEngine {
         return this.forces;
     }
 
+    /**
+     * Replaces the satellite catalog with live TLE data.
+     * Called once on app startup after TLE fetch completes.
+     *
+     * @param satellites Array of satellites from loadTLESatellites()
+     */
+    public loadSatellites(satellites: Satellite[]): void {
+        this.satellites = satellites;
+        this.notify();
+    }
+
     // ─── Controls ──────────────────────────────────────────────────────────────
 
     /**

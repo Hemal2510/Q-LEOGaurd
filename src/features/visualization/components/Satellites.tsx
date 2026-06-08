@@ -1,6 +1,6 @@
 // src/features/visualization/components/Satellites.tsx
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
@@ -8,71 +8,96 @@ import { SIM_DEFAULT_CONFIG } from '../../../config/simConfig';
 
 /**
  * Satellite marker radius in WebGL units.
- * Small enough to read as a point, large enough to see at orbital distances.
+ * Slightly exaggerated from true size — necessary for visibility
+ * at orbital distances without losing the point-like appearance.
+ * Units: WebGL units
  */
-const MARKER_RADIUS = 0.30;
+const MARKER_RADIUS = 0.15;
+
+/**
+ * Determines marker color from orbital altitude.
+ * Color encodes regime at a glance:
+ *   Blue  → LEO  altitude < 2,000km
+ *   Green → MEO  altitude 2,000–35,786km
+ *   Gold  → GEO  altitude ~35,786km
+ *
+ * @param position ECI position vector in meters
+ * @returns Hex color string
+ */
+function orbitColor(position: [number, number, number]): string {
+    const altM =
+        Math.sqrt(position[0] ** 2 + position[1] ** 2 + position[2] ** 2)
+        - 6_371_000;
+
+    if (altM < 2_000_000)  return '#7dd3fc'; // LEO — blue
+    if (altM < 35_000_000) return '#86efac'; // MEO — green
+    return '#fcd34d';                         // GEO — gold
+}
 
 /**
  * Satellites — renders live position markers for all tracked satellites.
- * Reads directly from SimulationEngine.getSatellites() every frame,
- * bypassing React state to prevent re-render storms at 60fps.
  *
- * Each satellite renders as a small emissive sphere.
- * Color encodes orbital regime:
- *   Blue  → LEO  (altitude < 2,000km)
- *   Green → MEO  (altitude 2,000–35,786km)
- *   Gold  → GEO  (altitude ~35,786km)
+ * Architecture:
+ *  - `satCount` state triggers a React re-render when TLE catalog loads,
+ *    rebuilding the mesh children to match the new satellite count.
+ *  - `useFrame` then updates each child's position every frame by reading
+ *    directly from SimulationEngine — bypassing React state entirely.
+ *  - This gives us dynamic catalog updates without per-frame re-renders.
  */
 export function Satellites() {
     const groupRef = useRef<Group>(null);
-    const engine = SimulationEngine.getInstance();
-    const scale = SIM_DEFAULT_CONFIG.distanceScale;
+    const engine   = SimulationEngine.getInstance();
+    const scale    = SIM_DEFAULT_CONFIG.distanceScale;
 
+    /**
+     * satCount triggers re-render when catalog size changes.
+     * Subscribing to SimulationEngine ensures we catch TLE load events.
+     */
+    const [satCount, setSatCount] = useState(engine.getSatellites().length);
+
+    useEffect(() => {
+        const unsub = engine.subscribe((state) => {
+            setSatCount(state.satellites.length);
+        });
+        return unsub;
+    }, []);
+
+    /**
+     * High-frequency position update — runs every frame.
+     * Updates mesh positions directly without React state.
+     * Guard on child count prevents index mismatch during catalog swap.
+     */
     useFrame(() => {
         if (!groupRef.current) return;
-
         const satellites = engine.getSatellites();
+        const children   = groupRef.current.children;
 
-        satellites.forEach((sat, i) => {
-            const child = groupRef.current!.children[i];
-            if (!child) return;
+        // Guard — child count must match satellite count
+        // Mismatch means catalog just updated, re-render is incoming
+        if (children.length !== satellites.length) return;
 
-            // Scale ECI position from meters to WebGL units
-            child.position.set(
-                sat.state.position[0] * scale,
-                sat.state.position[1] * scale,
-                sat.state.position[2] * scale
+        for (let i = 0; i < satellites.length; i++) {
+            const pos = satellites[i].state.position;
+            children[i].position.set(
+                pos[0] * scale,
+                pos[1] * scale,
+                pos[2] * scale,
             );
-        });
+        }
     });
 
     const satellites = engine.getSatellites();
 
     return (
         <group ref={groupRef}>
-            {satellites.map((sat) => {
-                    // Determine color by orbital altitude
-                    const altitudeM =
-                        Math.sqrt(
-                            sat.state.position[0] ** 2 +
-                            sat.state.position[1] ** 2 +
-                            sat.state.position[2] ** 2
-                        ) - 6_371_000;
-
-                    const color =
-                        altitudeM < 2_000_000
-                            ? '#7dd3fc'   // LEO — blue
-                            : altitudeM < 35_000_000
-                                ? '#86efac'   // MEO — green
-                                : '#fcd34d';  // GEO — gold
-
-                    return (
-                        <mesh key={sat.id}>
-                        <sphereGeometry args={[MARKER_RADIUS, 8, 8]} />
-                    <meshBasicMaterial color={color} />
-                    </mesh>
-                );
-                })}
-            </group>
+            {satellites.map((sat) => (
+                <mesh key={sat.id}>
+                    <sphereGeometry args={[MARKER_RADIUS, 8, 8]} />
+                    <meshBasicMaterial
+                        color={orbitColor(sat.state.position as [number, number, number])}
+                    />
+                </mesh>
+            ))}
+        </group>
     );
 }

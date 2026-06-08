@@ -74,7 +74,7 @@ export function OrbitPaths() {
                     <lineBasicMaterial
                         color="#378add"
                         transparent
-                        opacity={0.25}
+                        opacity={0.05}
                         depthWrite={false}
                     />
                 </line>

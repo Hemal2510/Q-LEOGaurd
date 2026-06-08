@@ -9,6 +9,7 @@ import { Earth } from '../components/Earth';
 import { Satellites } from '../components/Satellites';
 import { OrbitPaths } from '../components/OrbitPaths';
 import { PlatformUI } from '../overlays/PlatformUI';
+import { loadTLESatellites } from '../../../data/tle/tleLoader';
 
 /**
  * SceneLoop — drives the simulation engine every R3F frame.
@@ -43,15 +44,18 @@ export function OrbitalCanvas() {
     const engine = SimulationEngine.getInstance();
 
     useEffect(() => {
-        /**
-         * StrictMode in React 18 mounts components twice in dev.
-         * Guard against double-toggle by checking state before acting.
-         * Without this guard: mount → start → unmount → stop → remount → start
-         * but cleanup already fired so the loop never recovers.
-         */
         if (engine.getState().isPaused) {
             engine.togglePause();
         }
+
+        loadTLESatellites((loaded, total) => {
+            console.log(`Loading TLE groups: ${loaded}/${total}`);
+        }).then((satellites) => {
+            engine.loadSatellites(satellites);
+        }).catch((err) => {
+            console.error('TLE load failed:', err);
+        });
+
         return () => {
             if (!engine.getState().isPaused) {
                 engine.togglePause();
@@ -63,7 +67,7 @@ export function OrbitalCanvas() {
         <div style={{ width: '100%', height: '100%', background: '#060d1a', position: 'relative' }}>
             <Canvas
                 camera={{
-                    position: [0, 15, 35],
+                    position: [0, 20, 80],
                     fov: 50,
                     near: 0.1,
                     far: 5000,
@@ -104,7 +108,7 @@ export function OrbitalCanvas() {
                     panSpeed={0.5}
                     screenSpacePanning={true}
                     minDistance={10}
-                    maxDistance={200}
+                    maxDistance={500}
                     zoomSpeed={0.6}
                     rotateSpeed={0.4}
                     dampingFactor={0.08}
