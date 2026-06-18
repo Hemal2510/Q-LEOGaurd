@@ -1,6 +1,6 @@
 // src/features/visualization/components/OrbitPaths.tsx
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BufferGeometry, Float32BufferAttribute, Vector3 } from 'three';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import { propagateRK4 } from '../../../core/physics/propagator';
@@ -25,7 +25,22 @@ export function OrbitPaths() {
     const engine = SimulationEngine.getInstance();
     const scale = SIM_DEFAULT_CONFIG.distanceScale;
 
+    const [satCount, setSatCount] = useState(
+        engine.getSatellites().length
+    );
+
+    useEffect(() => {
+        const unsub = engine.subscribe((state) => {
+            setSatCount(state.satellites.length);
+        });
+
+        return unsub;
+    }, []);
+
     const paths = useMemo(() => {
+        console.log(
+            `Generating orbit paths for ${engine.getSatellites().length} satellites`
+        );
         return engine.getSatellites().map((sat) => {
             // Estimate orbital period using vis-viva: T = 2π√(a³/μ)
             // For a circular approximation: a ≈ |r|
@@ -65,7 +80,7 @@ export function OrbitPaths() {
 
             return { id: sat.id, geometry };
         });
-    }, []);
+    }, [satCount]);
 
     return (
         <group>
@@ -74,7 +89,7 @@ export function OrbitPaths() {
                     <lineBasicMaterial
                         color="#378add"
                         transparent
-                        opacity={0.05}
+                        opacity={0.15}
                         depthWrite={false}
                     />
                 </line>

@@ -24,6 +24,7 @@ export class SimulationEngine {
     private static instance: SimulationEngine | null = null;
 
     private satellites: Satellite[]         = [];
+    private initialSatellites: Satellite[] = [];
     private forces: ForceModel[]            = [];
     private listeners: Set<SimListener>     = new Set();
     private animationFrameId: number | null = null;
@@ -48,10 +49,24 @@ export class SimulationEngine {
      */
     public reset(): void {
         this.stopLoop();
-        this.satellites = JSON.parse(JSON.stringify(DEFAULT_SATELLITES));
-        this.forces     = [new GravityForce()];
+
+        if (this.initialSatellites.length > 0) {
+            this.satellites = JSON.parse(
+                JSON.stringify(this.initialSatellites)
+            );
+        } else {
+            this.satellites = JSON.parse(
+                JSON.stringify(DEFAULT_SATELLITES)
+            );
+        }
+
+        this.forces = [new GravityForce()];
+
         this.timeController.reset();
+
         this.notify();
+
+        this.startLoop();
     }
 
     // ─── Observer ──────────────────────────────────────────────────────────────
@@ -129,7 +144,14 @@ export class SimulationEngine {
      * @param satellites Array of satellites from loadTLESatellites()
      */
     public loadSatellites(satellites: Satellite[]): void {
-        this.satellites = satellites;
+        this.initialSatellites = JSON.parse(
+            JSON.stringify(satellites)
+        );
+
+        this.satellites = JSON.parse(
+            JSON.stringify(satellites)
+        );
+
         this.notify();
     }
 
