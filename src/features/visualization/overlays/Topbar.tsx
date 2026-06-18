@@ -5,18 +5,31 @@ import type { SimulationState } from '../../../simulation/SimulationState';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 
 function formatUTC(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('en-GB', {
+    return new Date(timestamp).toLocaleString('en-GB', {
         timeZone: 'UTC',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
         hour12: false,
     });
 }
 
 function formatIST(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('en-GB', {
+    return new Date(timestamp).toLocaleString('en-GB', {
         timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
         hour12: false,
     });
 }
+
 interface TopbarProps {
     simState: SimulationState;
 }
