@@ -104,6 +104,8 @@ export class SimulationEngine {
         return {
             satellites: this.satellites,
             epoch:      this.timeController.getEpoch(),
+            simulationTimestamp:
+                this.timeController.getSimulationTimestamp(),
             isPaused:   this.timeController.isPaused(),
             timeScale:  this.timeController.getTimeScale(),
             forces:     this.forces.map((f) => ({
@@ -127,6 +129,10 @@ export class SimulationEngine {
      */
     public getEpoch(): number {
         return this.timeController.getEpoch();
+    }
+
+    public getSimulationTimestamp(): number {
+        return this.timeController.getSimulationTimestamp();
     }
 
     /**
@@ -244,10 +250,9 @@ export class SimulationEngine {
             const steps = this.timeController.computeSteps(now);
 
             for (const step of steps) {
-                // Propagate satellite positions
                 this.tick(step);
-                // Advance epoch — THIS is what Earth rotation reads
-                this.timeController.advanceEpoch(step);
+
+                this.timeController.advanceTime(step);
             }
 
             this.animationFrameId = requestAnimationFrame(run);

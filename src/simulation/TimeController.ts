@@ -27,6 +27,8 @@ export class TimeController {
     /** Current simulation epoch in seconds from t=0 */
     private epoch: number = 0;
 
+    private simulationTimestamp: number = Date.now();
+
     /** Real-world timestamp of the last animation frame in milliseconds */
     private lastFrameTime: number = 0;
 
@@ -65,6 +67,7 @@ export class TimeController {
     public computeSteps(nowMs: number): number[] {
         if (this.paused) return [];
 
+
         const realDt = Math.min((nowMs - this.lastFrameTime) / 1000, 1.0);
         this.lastFrameTime = nowMs;
 
@@ -75,14 +78,16 @@ export class TimeController {
         return this.subdivide(simDt);
     }
 
+
     /**
      * Advances the internal epoch by a completed simulation step.
      * Called by SimulationEngine after each successful propagation step.
      *
      * @param dt Simulation delta time in seconds
      */
-    public advanceEpoch(dt: number): void {
+    public advanceTime(dt: number): void {
         this.epoch += dt;
+        this.simulationTimestamp += dt * 1000;
     }
 
     /**
@@ -122,6 +127,8 @@ export class TimeController {
      */
     public reset(): void {
         this.epoch = 0;
+        this.simulationTimestamp = Date.now();
+
         this.lastFrameTime = 0;
         this.paused = SIM_DEFAULT_CONFIG.startPaused;
         this.timeScale = SIM_DEFAULT_CONFIG.defaultTimeScale;
@@ -142,6 +149,10 @@ export class TimeController {
     /** Current time scale multiplier */
     public getTimeScale(): number {
         return this.timeScale;
+    }
+
+    public getSimulationTimestamp(): number {
+        return this.simulationTimestamp;
     }
 
     // ─── Private Helpers ───────────────────────────────────────────────────────

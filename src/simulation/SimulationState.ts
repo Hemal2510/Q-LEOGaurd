@@ -27,18 +27,14 @@ export interface SimulationState {
     /** Current satellite catalog with live orbital states */
     satellites: Satellite[];
 
-    /** Simulation epoch in seconds from t=0 */
     epoch: number;
 
-    /** Whether the simulation loop is currently paused */
+    simulationTimestamp: number;
+
     isPaused: boolean;
 
-    /**
-     * Simulation time scale multiplier.
-     * 60 = 1 real second equals 60 simulation seconds.
-     */
     timeScale: number;
 
-    /** Snapshot of registered force models and their enabled states */
+
     forces: ForceModelState[];
 }

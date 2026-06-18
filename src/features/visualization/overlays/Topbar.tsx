@@ -4,31 +4,44 @@ import { useState, useEffect, useRef } from 'react';
 import type { SimulationState } from '../../../simulation/SimulationState';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 
-function formatEpoch(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+function formatUTC(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString('en-GB', {
+        timeZone: 'UTC',
+        hour12: false,
+    });
 }
 
+function formatIST(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Kolkata',
+        hour12: false,
+    });
+}
 interface TopbarProps {
     simState: SimulationState;
 }
 
 export function Topbar({ simState }: TopbarProps) {
     const engine = SimulationEngine.getInstance();
-    const [liveEpoch, setLiveEpoch] = useState(0);
+    const [liveTimestamp, setLiveTimestamp] = useState(
+        engine.getSimulationTimestamp()
+    );
     const rafRef = useRef<number>(0);
 
     useEffect(() => {
-        // Poll epoch every frame via rAF — keeps clock live
-        // without triggering full React re-renders on parent
         const tick = () => {
-            setLiveEpoch(engine.getEpoch());
+            setLiveTimestamp(
+                engine.getSimulationTimestamp()
+            );
+
             rafRef.current = requestAnimationFrame(tick);
         };
+
         rafRef.current = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(rafRef.current);
+
+        return () => {
+            cancelAnimationFrame(rafRef.current);
+        };
     }, []);
 
     return (
@@ -66,7 +79,16 @@ export function Topbar({ simState }: TopbarProps) {
             {/* Stats */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <Stat label="tracked" value={String(simState.satellites.length)} />
-                <Stat label="epoch" value={formatEpoch(liveEpoch)} highlight />
+                <Stat
+                    label="utc"
+                    value={formatUTC(liveTimestamp)}
+                    highlight
+                />
+
+                <Stat
+                    label="ist"
+                    value={formatIST(liveTimestamp)}
+                />
                 <Stat label="speed" value={`${simState.timeScale}×`} />
                 <div style={{
                     display: 'flex', alignItems: 'center', gap: 5,
