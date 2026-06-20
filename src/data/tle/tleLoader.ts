@@ -38,6 +38,9 @@ const TLE_GROUPS: { group: string; count: number; category: string }[] = [
 
     // Space stations
     { group: 'stations',             count: 10,  category: 'satellite'    },
+
+    { group: 'oneweb', count: 40, category: 'satellite' },
+    { group: 'active', count: 50, category: 'satellite' },
 ];
 
 /**

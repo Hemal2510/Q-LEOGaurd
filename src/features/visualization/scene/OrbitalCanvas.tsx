@@ -1,6 +1,6 @@
 // src/features/visualization/scene/OrbitalCanvas.tsx
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { SpaceBackground } from '../components/SpaceBackground';
@@ -10,6 +10,9 @@ import { Satellites } from '../components/Satellites';
 import { OrbitPaths } from '../components/OrbitPaths';
 import { PlatformUI } from '../overlays/PlatformUI';
 import { loadTLESatellites } from '../../../data/tle/tleLoader';
+import { LoadingScreen } from '../overlays/LoadingScreen';
+
+
 
 /**
  * SceneLoop — drives the simulation engine every R3F frame.
@@ -18,6 +21,10 @@ import { loadTLESatellites } from '../../../data/tle/tleLoader';
  */
 function SceneLoop() {
     const engine = SimulationEngine.getInstance();
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [message, setMessage] = useState('Initializing...');
 
     useFrame(() => {
         engine.getSatellites();
@@ -43,18 +50,60 @@ function SceneLoop() {
 export function OrbitalCanvas() {
     const engine = SimulationEngine.getInstance();
 
+    const [isLoading, setIsLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [message, setMessage] = useState('Initializing...');
+
     useEffect(() => {
         if (engine.getState().isPaused) {
             engine.togglePause();
         }
 
+        setMessage('Loading orbital catalogs...');
+
         loadTLESatellites((loaded, total) => {
-            console.log(`Loading TLE groups: ${loaded}/${total}`);
-        }).then((satellites) => {
-            engine.loadSatellites(satellites);
-        }).catch((err) => {
-            console.error('TLE load failed:', err);
-        });
+            const percent = (loaded / total) * 80;
+
+            setProgress(percent);
+            setMessage(
+                `Loading TLE groups ${loaded}/${total}`
+            );
+
+            console.log(
+                `Loading TLE groups: ${loaded}/${total}`
+            );
+        })
+            .then((satellites) => {
+                setProgress(90);
+
+                setMessage(
+                    `Mounting ${satellites.length} satellites...`
+                );
+
+                engine.loadSatellites(satellites);
+
+                setTimeout(() => {
+                    setProgress(100);
+
+                    setMessage(
+                        'Generating orbital trajectories...'
+                    );
+
+                    setTimeout(() => {
+                        setIsLoading(false);
+                    }, 800);
+                }, 500);
+            })
+            .catch((err) => {
+                console.error(
+                    'TLE load failed:',
+                    err
+                );
+
+                setMessage(
+                    'Failed to load orbital catalog'
+                );
+            });
 
         return () => {
             if (!engine.getState().isPaused) {
@@ -115,6 +164,13 @@ export function OrbitalCanvas() {
                     enableDamping
                 />
             </Canvas>
+
+            {isLoading && (
+                <LoadingScreen
+                    progress={progress}
+                    message={message}
+                />
+            )}
 
             {/* HTML overlay — outside Canvas so pointer events work cleanly */}
             <PlatformUI />
