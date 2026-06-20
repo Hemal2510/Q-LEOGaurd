@@ -87,17 +87,46 @@ export function Satellites() {
     });
 
     const satellites = engine.getSatellites();
+    const selectedId = engine.getSelectedSatelliteId();
 
     return (
         <group ref={groupRef}>
-            {satellites.map((sat) => (
-                <mesh key={sat.id}>
-                    <sphereGeometry args={[MARKER_RADIUS, 8, 8]} />
-                    <meshBasicMaterial
-                        color={orbitColor(sat.state.position as [number, number, number])}
-                    />
-                </mesh>
-            ))}
+            {satellites.map((sat) => {
+                const isSelected = sat.id === selectedId;
+
+                return (
+                    <mesh
+                        key={sat.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            engine.selectSatellite(sat.id);
+                        }}
+                    >
+                        <sphereGeometry
+                            args={[
+                                isSelected
+                                    ? MARKER_RADIUS * 2
+                                    : MARKER_RADIUS,
+                                8,
+                                8,
+                            ]}
+                        />
+                        <meshBasicMaterial
+                            color={
+                                isSelected
+                                    ? '#ffcc00'
+                                    : orbitColor(
+                                        sat.state.position as [
+                                            number,
+                                            number,
+                                            number
+                                        ]
+                                    )
+                            }
+                        />
+                    </mesh>
+                );
+            })}
         </group>
     );
 }

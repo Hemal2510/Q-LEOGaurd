@@ -24,6 +24,7 @@ export class SimulationEngine {
     private static instance: SimulationEngine | null = null;
 
     private satellites: Satellite[]         = [];
+    private selectedSatelliteId: string | null = null;
     private initialSatellites: Satellite[] = [];
     private forces: ForceModel[]            = [];
     private listeners: Set<SimListener>     = new Set();
@@ -108,6 +109,9 @@ export class SimulationEngine {
                 this.timeController.getSimulationTimestamp(),
             isPaused:   this.timeController.isPaused(),
             timeScale:  this.timeController.getTimeScale(),
+
+            selectedSatelliteId: this.selectedSatelliteId,
+
             forces:     this.forces.map((f) => ({
                 name:    f.name,
                 enabled: f.enabled,
@@ -133,6 +137,20 @@ export class SimulationEngine {
 
     public getSimulationTimestamp(): number {
         return this.timeController.getSimulationTimestamp();
+    }
+
+    public selectSatellite(id: string): void {
+        this.selectedSatelliteId = id;
+        this.notify();
+    }
+
+    public clearSelection(): void {
+        this.selectedSatelliteId = null;
+        this.notify();
+    }
+
+    public getSelectedSatelliteId(): string | null {
+        return this.selectedSatelliteId;
     }
 
     /**

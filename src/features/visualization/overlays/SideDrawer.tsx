@@ -81,6 +81,7 @@ export function SideDrawer({ activeDrawer, simState }: SideDrawerProps) {
 // ─── Drawer panels ────────────────────────────────────────────────────────────
 
 function SatellitesPanel({ simState }: { simState: SimulationState }) {
+    const engine = SimulationEngine.getInstance();
     return (
         <div>
             <DrawerTitle>Tracked Objects</DrawerTitle>
@@ -99,18 +100,31 @@ function SatellitesPanel({ simState }: { simState: SimulationState }) {
                 const color =
                     altM < 2_000_000 ? '#7dd3fc' :
                         altM < 35_000_000 ? '#86efac' : '#fcd34d';
+                const isSelected =
+                    sat.id === simState.selectedSatelliteId;
 
                 return (
                     <div
                         key={sat.id}
+                        onClick={() => engine.selectSatellite(sat.id)}
                         style={{
-                            padding: '8px 0',
+                            padding: '8px',
                             borderBottom: '0.5px solid #1a3a5c',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
+
+                            cursor: 'pointer',
+
+                            background: isSelected
+                                ? 'rgba(55,138,221,0.15)'
+                                : 'transparent',
+
+                            borderRadius: 6,
+
+                            transition: 'all 0.15s',
                         }}
-                    >
+                        >
                         <div>
                             <div style={{
                                 fontSize: 11,

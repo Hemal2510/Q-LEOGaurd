@@ -35,6 +35,8 @@ export interface SimulationState {
 
     timeScale: number;
 
-
     forces: ForceModelState[];
+
+    selectedSatelliteId: string | null;
+
 }
