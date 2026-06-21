@@ -36,6 +36,10 @@ interface TopbarProps {
 
 export function Topbar({ simState }: TopbarProps) {
     const engine = SimulationEngine.getInstance();
+
+    const selectedSatellite = simState.satellites.find(
+        sat => sat.id === simState.selectedSatelliteId
+    );
     const [liveTimestamp, setLiveTimestamp] = useState(
         engine.getSimulationTimestamp()
     );
@@ -73,20 +77,72 @@ export function Topbar({ simState }: TopbarProps) {
 
             {/* Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
                 <div style={{
-                    width: 7, height: 7,
+                    width: 7,
+                    height: 7,
                     borderRadius: '50%',
                     background: simState.isPaused ? '#f87171' : '#1d9e75',
-                    boxShadow: simState.isPaused ? '0 0 6px #f87171' : '0 0 6px #1d9e75',
+                    boxShadow: simState.isPaused
+                        ? '0 0 6px #f87171'
+                        : '0 0 6px #1d9e75',
                     transition: 'all 0.3s',
                 }} />
+
                 <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: '#7dd3fc', letterSpacing: '0.12em',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#7dd3fc',
+                    letterSpacing: '0.12em',
                     fontFamily: 'monospace',
                 }}>
-          Q-LEOGUARD
-        </span>
+        Q-LEOGUARD
+    </span>
+
+                {selectedSatellite && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            marginLeft: 16,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            border: '1px solid #f8717133',
+                            background: 'rgba(248,113,113,0.08)',
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                        }}
+                    >
+            <span style={{
+                color: '#f87171',
+                fontWeight: 600,
+            }}>
+                SELECTED
+            </span>
+
+                        <span style={{
+                            color: '#e2e8f0',
+                        }}>
+                {selectedSatellite.name}
+            </span>
+
+                        <button
+                            onClick={() => engine.clearSelection()}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#f87171',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                padding: 0,
+                            }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
             </div>
 
             {/* Stats */}
