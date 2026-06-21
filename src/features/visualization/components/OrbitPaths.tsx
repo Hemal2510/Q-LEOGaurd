@@ -25,13 +25,11 @@ export function OrbitPaths() {
     const engine = SimulationEngine.getInstance();
     const scale = SIM_DEFAULT_CONFIG.distanceScale;
 
-    const [satCount, setSatCount] = useState(
-        engine.getSatellites().length
-    );
+    const [, forceRender] = useState(0);
 
     useEffect(() => {
         const unsub = engine.subscribe((state) => {
-            setSatCount(state.satellites.length);
+            forceRender(v => v + 1);
         });
 
         return unsub;
@@ -80,20 +78,34 @@ export function OrbitPaths() {
 
             return { id: sat.id, geometry };
         });
-    }, [satCount]);
+    }, [engine.getSelectedSatelliteId()]);
 
     return (
         <group>
-            {paths.map((path) => (
-                <line key={path.id} geometry={path.geometry}>
-                    <lineBasicMaterial
-                        color="#378add"
-                        transparent
-                        opacity={0.15}
-                        depthWrite={false}
-                    />
-                </line>
-            ))}
+            {paths.map((path) => {
+
+                const isSelected =
+                    path.id === engine.getSelectedSatelliteId();
+
+                return (
+                    <line key={path.id} geometry={path.geometry}>
+                        <lineBasicMaterial
+                            color={
+                                isSelected
+                                    ? '#ff0033'
+                                    : '#378add'
+                            }
+                            transparent
+                            opacity={
+                                isSelected
+                                    ? 1.5
+                                    : 0.15
+                            }
+                            depthWrite={false}
+                        />
+                    </line>
+                );
+            })}
         </group>
     );
 }

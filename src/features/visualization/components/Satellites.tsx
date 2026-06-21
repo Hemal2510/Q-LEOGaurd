@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Group } from 'three';
+import type { Group,Mesh } from 'three';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import { SIM_DEFAULT_CONFIG } from '../../../config/simConfig';
 
@@ -53,11 +53,11 @@ export function Satellites() {
      * satCount triggers re-render when catalog size changes.
      * Subscribing to SimulationEngine ensures we catch TLE load events.
      */
-    const [satCount, setSatCount] = useState(engine.getSatellites().length);
+    const [, forceRender] = useState(0);
 
     useEffect(() => {
         const unsub = engine.subscribe((state) => {
-            setSatCount(state.satellites.length);
+            forceRender(v => v + 1);
         });
         return unsub;
     }, []);
@@ -84,19 +84,67 @@ export function Satellites() {
                 pos[2] * scale,
             );
         }
+
+        const selectedId = engine.getSelectedSatelliteId();
+
+        for (let i = 0; i < children.length; i++) {
+
+            const mesh = children[i] as Mesh;
+
+            const material = mesh.material as any;
+
+            const satelliteId =
+                mesh.userData.satelliteId;
+
+            if (satelliteId === selectedId) {
+
+                const pulse =
+                    0.5 + 0.5 * Math.sin(
+                        performance.now() * 0.005
+                    );
+
+                material.color.setRGB(
+                    1,
+                    pulse,
+                    pulse
+                );
+            }
+            else {
+
+                material.color.set(
+                    orbitColor(
+                        satellites[i].state.position as [
+                            number,
+                            number,
+                            number
+                        ]
+                    )
+                );
+            }
+        }
     });
 
     const satellites = engine.getSatellites();
     const selectedId = engine.getSelectedSatelliteId();
+    console.log("SATELLITES COMPONENT RENDERED");
+    console.log("Selected ID:", selectedId);
+
 
     return (
         <group ref={groupRef}>
             {satellites.map((sat) => {
                 const isSelected = sat.id === selectedId;
 
+                if (isSelected) {
+                    console.log("SELECTED SAT:", sat.name);
+                }
+
+
+
                 return (
                     <mesh
                         key={sat.id}
+                        userData={{ satelliteId: sat.id }}
                         onClick={(e) => {
                             e.stopPropagation();
                             engine.selectSatellite(sat.id);
@@ -104,9 +152,7 @@ export function Satellites() {
                     >
                         <sphereGeometry
                             args={[
-                                isSelected
-                                    ? MARKER_RADIUS * 2
-                                    : MARKER_RADIUS,
+                                MARKER_RADIUS,
                                 8,
                                 8,
                             ]}
@@ -114,7 +160,7 @@ export function Satellites() {
                         <meshBasicMaterial
                             color={
                                 isSelected
-                                    ? '#ffcc00'
+                                    ? '#ff4444'
                                     : orbitColor(
                                         sat.state.position as [
                                             number,

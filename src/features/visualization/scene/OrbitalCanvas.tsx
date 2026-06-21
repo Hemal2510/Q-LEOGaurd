@@ -1,6 +1,7 @@
 // src/features/visualization/scene/OrbitalCanvas.tsx
 
 import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { SpaceBackground } from '../components/SpaceBackground';
@@ -11,6 +12,7 @@ import { OrbitPaths } from '../components/OrbitPaths';
 import { PlatformUI } from '../overlays/PlatformUI';
 import { loadTLESatellites } from '../../../data/tle/tleLoader';
 import { LoadingScreen } from '../overlays/LoadingScreen';
+
 
 
 
@@ -25,6 +27,7 @@ function SceneLoop() {
     const [isLoading, setIsLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState('Initializing...');
+
 
     useFrame(() => {
         engine.getSatellites();
@@ -49,6 +52,8 @@ function SceneLoop() {
  */
 export function OrbitalCanvas() {
     const engine = SimulationEngine.getInstance();
+
+    const controlsRef = useRef(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [progress, setProgress] = useState(0);
@@ -150,6 +155,8 @@ export function OrbitalCanvas() {
                 <Earth />
                 <Satellites />
                 <OrbitPaths />
+
+
 
                 {/* Mouse controls */}
                 <OrbitControls
