@@ -34,6 +34,7 @@ export class SimulationEngine {
     private timeController: TimeController  = new TimeController();
     private conjunctionDetector: ConjunctionDetector =
         new ConjunctionDetector();
+    private lastConjunctionUpdate = 0;
 
     private activeConjunctions: ConjunctionEvent[] = [];
 
@@ -124,7 +125,7 @@ export class SimulationEngine {
                 name:    f.name,
                 enabled: f.enabled,
             })),
-            activeConjunctions: this.activeConjunctions,activeConjunctions: this.activeConjunctions,
+            activeConjunctions: this.activeConjunctions
         };
     }
 
@@ -177,6 +178,19 @@ export class SimulationEngine {
      * @param satellites Array of satellites from loadTLESatellites()
      */
     public loadSatellites(satellites: Satellite[]): void {
+
+        console.log(
+            "Total satellites loaded:",
+            satellites.length
+        );
+
+        console.log(
+            "Unique IDs:",
+            new Set(
+                satellites.map(s => s.id)
+            ).size
+        );
+
         this.initialSatellites = JSON.parse(
             JSON.stringify(satellites)
         );
@@ -250,16 +264,27 @@ export class SimulationEngine {
                 this.forces
             );
         }
-        this.activeConjunctions =
-            this.conjunctionDetector.detect(
-                this.satellites,
-                this.timeController.getSimulationTimestamp()
-            );
+
+        const now = performance.now();
+
+        if (now - this.lastConjunctionUpdate > 5000) {
+
+            this.activeConjunctions =
+                this.conjunctionDetector.detect(
+                    this.satellites,
+                    this.timeController.getSimulationTimestamp()
+                );
+
+            this.lastConjunctionUpdate = now;
+
+            this.notify();
+        }
+
         console.log(
             "Conjunctions:",
             this.activeConjunctions.length
         );
-        console.log(this.activeConjunctions[0]);
+
     }
 
     // ─── Animation Loop ────────────────────────────────────────────────────────

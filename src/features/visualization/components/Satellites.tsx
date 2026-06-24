@@ -106,10 +106,34 @@ export function Satellites() {
             const satelliteId =
                 mesh.userData.satelliteId;
 
+            if (
+                satelliteId === 'tle-25544' ||
+                satelliteId === 'tle-36086' ||
+                satelliteId === 'tle-49044' ||
+                satelliteId === 'tle-66664' ||
+                satelliteId === 'tle-48274' ||
+                satelliteId === 'tle-53239' ||
+                satelliteId === 'tle-54216'
+            ) {
+                console.log(
+                    "MESH CHECK:",
+                    satelliteId,
+                    mesh.uuid
+                );
+            }
+
             const isConjunction =
                 conjunctionIds.has(satelliteId);
 
             if (isConjunction) {
+                console.log(
+                    satelliteId,
+                    mesh.position.x,
+                    mesh.position.y,
+                    mesh.position.z
+                );
+
+
 
                 const pulse =
                     0.5 + 0.5 * Math.sin(
@@ -121,8 +145,7 @@ export function Satellites() {
                     pulse * 0.25,
                     pulse * 0.25
                 );
-            }
-            else if (satelliteId === selectedId) {
+            }            else if (satelliteId === selectedId) {
 
                 const pulse =
                     0.7 + 0.3 * Math.sin(
@@ -152,6 +175,28 @@ export function Satellites() {
 
     const satellites = engine.getSatellites();
     const selectedId = engine.getSelectedSatelliteId();
+
+    const ids = satellites.map(s => s.id);
+
+    console.log(
+        "Satellite Count:",
+        ids.length
+    );
+
+    console.log(
+        "Unique IDs:",
+        new Set(ids).size
+    );
+
+    const duplicates = ids.filter(
+        (id, index) => ids.indexOf(id) !== index
+    );
+
+    console.log(
+        "Duplicate IDs:",
+        [...new Set(duplicates)]
+    );
+
     console.log("SATELLITES COMPONENT RENDERED");
     console.log("Selected ID:", selectedId);
 
@@ -170,6 +215,14 @@ export function Satellites() {
                                 c.satelliteAId === sat.id ||
                                 c.satelliteBId === sat.id
                         );
+
+                if (isConjunction) {
+                    console.log(
+                        "RED SAT:",
+                        sat.id,
+                        sat.name
+                    );
+                }
 
                 if (isSelected) {
                     console.log("SELECTED SAT:", sat.name);
@@ -195,10 +248,10 @@ export function Satellites() {
                         />
                         <meshBasicMaterial
                             color={
-                                isConjunction
-                                    ? '#ff3333'
-                                    : isSelected
-                                        ? '#ff00ff'
+                                isSelected
+                                    ? '#fbbf24'
+                                    : isConjunction
+                                        ? '#ff3333'
                                         : orbitColor(
                                             sat.state.position as [
                                                 number,

@@ -82,7 +82,9 @@ export function OrbitPaths() {
 
     return (
         <group>
-            {paths.map((path) => {
+            {paths.map((path,index) => {
+
+
 
                 const conjunctionIds = new Set(
                     engine
@@ -92,6 +94,19 @@ export function OrbitPaths() {
                             c.satelliteAId,
                             c.satelliteBId
                         ])
+
+                );
+
+                if (conjunctionIds.has(path.id)) {
+                    console.log("RED ORBIT:", path.id);
+                }
+
+
+
+                console.log(
+                    "Conjunction IDs:",
+                    conjunctionIds.size,
+                    [...conjunctionIds]
                 );
 
                 const isConjunction =
@@ -101,13 +116,16 @@ export function OrbitPaths() {
                     path.id === engine.getSelectedSatelliteId();
 
                 return (
-                    <line key={path.id} geometry={path.geometry}>
+                    <line
+                        key={`${path.id}-${index}`}
+                        geometry={path.geometry}
+                    >
                         <lineBasicMaterial
                             color={
-                                isConjunction
-                                    ? '#ff3333'
-                                    : isSelected
-                                        ? '#fbbf24'
+                                isSelected
+                                    ? '#fbbf24'
+                                    : isConjunction
+                                        ? '#ff3333'
                                         : '#378add'
                             }
                             transparent
@@ -123,6 +141,8 @@ export function OrbitPaths() {
                     </line>
                 );
             })}
+
+
         </group>
     );
 }

@@ -243,6 +243,28 @@ export async function loadTLESatellites(
         }
     }
 
-    console.log(`TLE load complete: ${satellites.length} satellites`);
-    return satellites;
+    // Remove duplicate satellites that appear
+// across multiple Celestrak groups
+    const uniqueSatellites = satellites.filter(
+        (sat, index, self) =>
+            index === self.findIndex(
+                s => s.id === sat.id
+            )
+    );
+
+    console.log(
+        `Before dedupe: ${satellites.length}`
+    );
+
+    console.log(
+        `After dedupe: ${uniqueSatellites.length}`
+    );
+
+    console.log(
+        `Removed duplicates: ${
+            satellites.length - uniqueSatellites.length
+        }`
+    );
+
+    return uniqueSatellites;
 }

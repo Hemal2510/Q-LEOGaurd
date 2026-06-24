@@ -32,9 +32,13 @@ function formatIST(timestamp: number): string {
 
 interface TopbarProps {
     simState: SimulationState;
+    onOpenConjunctions: () => void;
 }
 
-export function Topbar({ simState }: TopbarProps) {
+export function Topbar({
+                           simState,
+                           onOpenConjunctions,
+                       }: TopbarProps) {
     const engine = SimulationEngine.getInstance();
 
     const selectedSatellite = simState.satellites.find(
@@ -149,10 +153,43 @@ export function Topbar({ simState }: TopbarProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <Stat label="tracked" value={String(simState.satellites.length)} />
 
-                <Stat
-                    label="conjunctions"
-                    value={String(simState.activeConjunctions.length)}
-                />
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontSize: 11,
+                        color: '#4a8ab0',
+                        fontFamily: 'monospace',
+                    }}
+                >
+                    conjunctions
+
+                    <span
+                        style={{
+                            color: '#f87171',
+                            fontWeight: 600,
+                        }}
+                    >
+        {simState.activeConjunctions.length}
+    </span>
+
+                    <button
+                        onClick={onOpenConjunctions}
+                        style={{
+                            background: 'rgba(248,113,113,0.08)',
+                            border: '1px solid #f8717133',
+                            color: '#f87171',
+                            borderRadius: 4,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        VIEW
+                    </button>
+                </div>
 
                 <Stat
                     label="utc"

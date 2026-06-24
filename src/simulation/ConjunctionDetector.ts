@@ -44,6 +44,11 @@ export class ConjunctionDetector {
                 const satA = satellites[i];
                 const satB = satellites[j];
 
+                // Ignore duplicate satellite entries
+                if (satA.id === satB.id) {
+                    continue;
+                }
+
                 const separation = subtract(
                     satA.state.position,
                     satB.state.position
