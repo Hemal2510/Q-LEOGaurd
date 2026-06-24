@@ -7,6 +7,8 @@ import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
+import { ConjunctionDetector } from './ConjunctionDetector';
+import type { ConjunctionEvent } from '../models/conjunction';
 
 export type SimListener = (state: SimulationState) => void;
 
@@ -30,6 +32,10 @@ export class SimulationEngine {
     private listeners: Set<SimListener>     = new Set();
     private animationFrameId: number | null = null;
     private timeController: TimeController  = new TimeController();
+    private conjunctionDetector: ConjunctionDetector =
+        new ConjunctionDetector();
+
+    private activeConjunctions: ConjunctionEvent[] = [];
 
     private constructor() {
         this.reset();
@@ -64,6 +70,8 @@ export class SimulationEngine {
         this.forces = [new GravityForce()];
 
         this.timeController.reset();
+
+        this.activeConjunctions = [];
 
         this.notify();
 
@@ -116,6 +124,7 @@ export class SimulationEngine {
                 name:    f.name,
                 enabled: f.enabled,
             })),
+            activeConjunctions: this.activeConjunctions,activeConjunctions: this.activeConjunctions,
         };
     }
 
@@ -241,6 +250,16 @@ export class SimulationEngine {
                 this.forces
             );
         }
+        this.activeConjunctions =
+            this.conjunctionDetector.detect(
+                this.satellites,
+                this.timeController.getSimulationTimestamp()
+            );
+        console.log(
+            "Conjunctions:",
+            this.activeConjunctions.length
+        );
+        console.log(this.activeConjunctions[0]);
     }
 
     // ─── Animation Loop ────────────────────────────────────────────────────────
