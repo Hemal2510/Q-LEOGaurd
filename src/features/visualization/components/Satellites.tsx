@@ -87,6 +87,16 @@ export function Satellites() {
 
         const selectedId = engine.getSelectedSatelliteId();
 
+        const conjunctionIds = new Set(
+            engine
+                .getState()
+                .activeConjunctions
+                .flatMap(c => [
+                    c.satelliteAId,
+                    c.satelliteBId
+                ])
+        );
+
         for (let i = 0; i < children.length; i++) {
 
             const mesh = children[i] as Mesh;
@@ -96,7 +106,10 @@ export function Satellites() {
             const satelliteId =
                 mesh.userData.satelliteId;
 
-            if (satelliteId === selectedId) {
+            const isConjunction =
+                conjunctionIds.has(satelliteId);
+
+            if (isConjunction) {
 
                 const pulse =
                     0.5 + 0.5 * Math.sin(
@@ -105,7 +118,20 @@ export function Satellites() {
 
                 material.color.setRGB(
                     1,
+                    pulse * 0.25,
+                    pulse * 0.25
+                );
+            }
+            else if (satelliteId === selectedId) {
+
+                const pulse =
+                    0.7 + 0.3 * Math.sin(
+                        performance.now() * 0.005
+                    );
+
+                material.color.setRGB(
                     pulse,
+                    0,
                     pulse
                 );
             }
@@ -135,6 +161,16 @@ export function Satellites() {
             {satellites.map((sat) => {
                 const isSelected = sat.id === selectedId;
 
+                const isConjunction =
+                    engine
+                        .getState()
+                        .activeConjunctions
+                        .some(
+                            c =>
+                                c.satelliteAId === sat.id ||
+                                c.satelliteBId === sat.id
+                        );
+
                 if (isSelected) {
                     console.log("SELECTED SAT:", sat.name);
                 }
@@ -159,15 +195,17 @@ export function Satellites() {
                         />
                         <meshBasicMaterial
                             color={
-                                isSelected
-                                    ? '#ff4444'
-                                    : orbitColor(
-                                        sat.state.position as [
-                                            number,
-                                            number,
-                                            number
-                                        ]
-                                    )
+                                isConjunction
+                                    ? '#ff3333'
+                                    : isSelected
+                                        ? '#ff00ff'
+                                        : orbitColor(
+                                            sat.state.position as [
+                                                number,
+                                                number,
+                                                number
+                                            ]
+                                        )
                             }
                         />
                     </mesh>

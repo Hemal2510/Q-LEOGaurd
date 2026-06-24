@@ -148,6 +148,12 @@ export function Topbar({ simState }: TopbarProps) {
             {/* Stats */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <Stat label="tracked" value={String(simState.satellites.length)} />
+
+                <Stat
+                    label="conjunctions"
+                    value={String(simState.activeConjunctions.length)}
+                />
+
                 <Stat
                     label="utc"
                     value={formatUTC(liveTimestamp)}

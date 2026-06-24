@@ -84,6 +84,19 @@ export function OrbitPaths() {
         <group>
             {paths.map((path) => {
 
+                const conjunctionIds = new Set(
+                    engine
+                        .getState()
+                        .activeConjunctions
+                        .flatMap(c => [
+                            c.satelliteAId,
+                            c.satelliteBId
+                        ])
+                );
+
+                const isConjunction =
+                    conjunctionIds.has(path.id);
+
                 const isSelected =
                     path.id === engine.getSelectedSatelliteId();
 
@@ -91,15 +104,19 @@ export function OrbitPaths() {
                     <line key={path.id} geometry={path.geometry}>
                         <lineBasicMaterial
                             color={
-                                isSelected
-                                    ? '#ff0033'
-                                    : '#378add'
+                                isConjunction
+                                    ? '#ff3333'
+                                    : isSelected
+                                        ? '#fbbf24'
+                                        : '#378add'
                             }
                             transparent
                             opacity={
-                                isSelected
+                                isConjunction
                                     ? 1.5
-                                    : 0.15
+                                    : isSelected
+                                        ? 1.5
+                                        : 0.15
                             }
                             depthWrite={false}
                         />
