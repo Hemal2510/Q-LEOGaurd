@@ -1,12 +1,14 @@
-import { ForceModel } from "./forceModel";
-import { OrbitalState, PhysicalProperties } from "../models";
+import type { ForceModel } from "./ForceModel";
+import type { OrbitalState, PhysicalProperties } from '../../../models/satellite';
 import {
-    Vector3D,
+    type Vector3D,
     subtract,
     scale,
     magnitude
-} from "../vector";
-import { SUN_MU, MOON_MU } from "../constants";
+} from "../../math/vector";
+import { SUN_MU, MOON_MU } from "../../../config/constants";
+import { getMoonPosition } from "../../ephemeris/moonEphemeris";
+import { getSunPosition } from "../../ephemeris/sunEphemeris";
 
 /*
  * Gravitational perturbation force on a satellite due to the Sun and Moon.
@@ -58,8 +60,6 @@ export class SunGravityForce implements ForceModel {
     readonly name = "Sun Third-Body Gravity";
     enabled = true;
 
-    constructor(private ephemeris: any) {}
-
     calculateAcceleration(
         state: OrbitalState,
         _properties: PhysicalProperties,
@@ -68,7 +68,7 @@ export class SunGravityForce implements ForceModel {
 
         const rSat = state.position;
 
-        const rSun = this.ephemeris.getSunPosition(epoch);
+        const rSun = getSunPosition(epoch);
 
         return tidalAcceleration(
             rSun,
@@ -83,8 +83,6 @@ export class MoonGravityForce implements ForceModel {
     readonly name = "Moon Third-Body Gravity";
     enabled = true;
 
-    constructor(private ephemeris: any) {}
-
     calculateAcceleration(
         state: OrbitalState,
         _properties: PhysicalProperties,
@@ -93,7 +91,7 @@ export class MoonGravityForce implements ForceModel {
 
         const rSat = state.position;
 
-        const rMoon = this.ephemeris.getMoonPosition(epoch);
+        const rMoon = getMoonPosition(epoch);
 
         return tidalAcceleration(
             rMoon,

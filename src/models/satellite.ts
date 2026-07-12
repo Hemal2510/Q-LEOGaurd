@@ -1,5 +1,5 @@
 import type { Vector3D } from '../core/math/vector';
-import type { ForceModel } from '../core/physics/forces/forceModel';
+import type { ForceModel } from '../core/physics/forces/ForceModel';
 /**
  * Classical Keplerian orbital elements.
  * Extremely useful for analytical descriptions of orbits.
