@@ -1,7 +1,7 @@
 import type { OrbitalState, PhysicalProperties } from '../../../models/satellite';
 import type { Vector3D } from '../../math/vector';
 import { magnitude, scale } from '../../math/vector';
-import type { ForceModel } from './forceModel';
+import type { ForceModel } from './ForceModel';
 import { EARTH_MU } from '../../../config/constants';
 
 /**

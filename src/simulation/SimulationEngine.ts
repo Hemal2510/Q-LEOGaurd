@@ -1,8 +1,10 @@
 // src/simulation/SimulationEngine.ts
 
 import type { Satellite } from '../models/satellite';
-import type { ForceModel } from '../core/physics/forces/forceModel';
-import { GravityForce } from '../core/physics/forces/gravityForce';
+import type { ForceModel } from '../core/physics/forces/ForceModel';
+import { GravityForce } from '../core/physics/forces/GravityForce';
+import {SunGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {MoonGravityForce} from '../core/physics/forces/ThirdBodyForces';
 import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
@@ -61,7 +63,12 @@ export class SimulationEngine {
             );
         }
 
-        this.forces = [new GravityForce()];
+        this.forces = [
+            new GravityForce(),
+            new SunGravityForce(),
+            new MoonGravityForce(),
+
+        ];
 
         this.timeController.reset();
 
