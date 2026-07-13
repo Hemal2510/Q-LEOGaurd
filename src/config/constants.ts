@@ -28,7 +28,7 @@ export const EARTH_J2 = 1.08262668e-3;
  * Moon gravitational parameter (JPL Planetary Ephemeris).
  * Units : m³/s²
  */ 
-export const MOON_MU = 4902800118 ;
+export const MOON_MU = 4902800118000 ;
 
 /**
  * Sun gravitational parameter (JPL Planetary Ephemeris).
