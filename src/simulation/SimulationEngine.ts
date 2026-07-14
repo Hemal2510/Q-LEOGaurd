@@ -38,6 +38,12 @@ export class SimulationEngine {
 
     private activeConjunctions: ConjunctionEvent[] = [];
 
+    private catalogVersion = 0;
+
+    public getCatalogVersion(): number {
+        return this.catalogVersion;
+    }
+
     private constructor() {
         this.reset();
     }
@@ -198,6 +204,9 @@ export class SimulationEngine {
         this.satellites = JSON.parse(
             JSON.stringify(satellites)
         );
+
+        this.catalogVersion++;
+
 
         this.notify();
     }

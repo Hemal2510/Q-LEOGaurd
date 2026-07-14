@@ -2,78 +2,89 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Group,Mesh } from 'three';
+import type { Group, Mesh } from 'three';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import { SIM_DEFAULT_CONFIG } from '../../../config/simConfig';
 
-/**
- * Satellite marker radius in WebGL units.
- * Slightly exaggerated from true size — necessary for visibility
- * at orbital distances without losing the point-like appearance.
- * Units: WebGL units
- */
+/** Satellite marker radius in WebGL units. Units: WebGL units */
 const MARKER_RADIUS = 0.15;
 
 /**
+ * Risk score (0-100) above which a conjunction marker actively pulses.
+ * Below this, risk is still color-coded but held static — pulsing
+ * everything under threshold would make low-risk pairs look as urgent
+ * as high-risk ones. This threshold is a judgment call, not derived —
+ * revisit if it doesn't read well visually.
+ */
+const RISK_PULSE_THRESHOLD = 50;
+
+/**
  * Determines marker color from orbital altitude.
- * Color encodes regime at a glance:
- *   Blue  → LEO  altitude < 2,000km
- *   Green → MEO  altitude 2,000–35,786km
- *   Gold  → GEO  altitude ~35,786km
- *
+ * Blue → LEO <2,000km | Green → MEO 2,000–35,786km | Gold → GEO
  * @param position ECI position vector in meters
- * @returns Hex color string
  */
 function orbitColor(position: [number, number, number]): string {
     const altM =
         Math.sqrt(position[0] ** 2 + position[1] ** 2 + position[2] ** 2)
         - 6_371_000;
 
-    if (altM < 2_000_000)  return '#7dd3fc'; // LEO — blue
-    if (altM < 35_000_000) return '#86efac'; // MEO — green
-    return '#fcd34d';                         // GEO — gold
+    if (altM < 2_000_000)  return '#7dd3fc';
+    if (altM < 35_000_000) return '#86efac';
+    return '#fcd34d';
+}
+
+/**
+ * Maps a 0-100 risk score to an RGB color for a conjunction marker.
+ * Risk 0 → muted orange, risk 100 → saturated red.
+ * pulseFactor in [0,1] dims the non-red channels for a pulsing alert
+ * effect on high-risk pairs only.
+ */
+function riskToColor(risk: number, pulseFactor: number = 1): [number, number, number] {
+    const t = Math.min(Math.max(risk / 100, 0), 1);
+    const channelBase = (1 - t) * 0.6; // 0.6 at risk=0, 0 at risk=100
+    const channel = risk > RISK_PULSE_THRESHOLD
+        ? channelBase * pulseFactor
+        : channelBase;
+    return [1, channel, channel];
+}
+
+/**
+ * Builds a satelliteId -> highest active riskScore map from current
+ * conjunction events. A satellite involved in multiple simultaneous
+ * conjunctions is colored by its worst one.
+ */
+function getConjunctionRiskMap(engine: SimulationEngine): Map<string, number> {
+    const map = new Map<string, number>();
+    for (const c of engine.getState().activeConjunctions) {
+        map.set(c.satelliteAId, Math.max(map.get(c.satelliteAId) ?? 0, c.riskScore));
+        map.set(c.satelliteBId, Math.max(map.get(c.satelliteBId) ?? 0, c.riskScore));
+    }
+    return map;
 }
 
 /**
  * Satellites — renders live position markers for all tracked satellites.
- *
- * Architecture:
- *  - `satCount` state triggers a React re-render when TLE catalog loads,
- *    rebuilding the mesh children to match the new satellite count.
- *  - `useFrame` then updates each child's position every frame by reading
- *    directly from SimulationEngine — bypassing React state entirely.
- *  - This gives us dynamic catalog updates without per-frame re-renders.
+ * Position updates and conjunction coloring run every frame via useFrame,
+ * bypassing React state. React re-render only happens on catalog/selection
+ * change (via engine subscription), to rebuild mesh children.
  */
 export function Satellites() {
     const groupRef = useRef<Group>(null);
     const engine   = SimulationEngine.getInstance();
     const scale    = SIM_DEFAULT_CONFIG.distanceScale;
 
-    /**
-     * satCount triggers re-render when catalog size changes.
-     * Subscribing to SimulationEngine ensures we catch TLE load events.
-     */
     const [, forceRender] = useState(0);
 
     useEffect(() => {
-        const unsub = engine.subscribe((state) => {
-            forceRender(v => v + 1);
-        });
+        const unsub = engine.subscribe(() => forceRender(v => v + 1));
         return unsub;
     }, []);
 
-    /**
-     * High-frequency position update — runs every frame.
-     * Updates mesh positions directly without React state.
-     * Guard on child count prevents index mismatch during catalog swap.
-     */
     useFrame(() => {
         if (!groupRef.current) return;
         const satellites = engine.getSatellites();
         const children   = groupRef.current.children;
 
-        // Guard — child count must match satellite count
-        // Mismatch means catalog just updated, re-render is incoming
         if (children.length !== satellites.length) return;
 
         for (let i = 0; i < satellites.length; i++) {
@@ -86,149 +97,48 @@ export function Satellites() {
         }
 
         const selectedId = engine.getSelectedSatelliteId();
-
-        const conjunctionIds = new Set(
-            engine
-                .getState()
-                .activeConjunctions
-                .flatMap(c => [
-                    c.satelliteAId,
-                    c.satelliteBId
-                ])
-        );
+        const riskMap = getConjunctionRiskMap(engine);
 
         for (let i = 0; i < children.length; i++) {
-
             const mesh = children[i] as Mesh;
-
             const material = mesh.material as any;
+            const satelliteId = mesh.userData.satelliteId;
 
-            const satelliteId =
-                mesh.userData.satelliteId;
-
-            if (
-                satelliteId === 'tle-25544' ||
-                satelliteId === 'tle-36086' ||
-                satelliteId === 'tle-49044' ||
-                satelliteId === 'tle-66664' ||
-                satelliteId === 'tle-48274' ||
-                satelliteId === 'tle-53239' ||
-                satelliteId === 'tle-54216'
-            ) {
-                console.log(
-                    "MESH CHECK:",
-                    satelliteId,
-                    mesh.uuid
-                );
+            // Selection takes visual priority over conjunction alert —
+            // an explicit user click should always be clearly visible.
+            if (satelliteId === selectedId) {
+                const pulse = 0.7 + 0.3 * Math.sin(performance.now() * 0.005);
+                material.color.setRGB(pulse, 0, pulse);
+                continue;
             }
 
-            const isConjunction =
-                conjunctionIds.has(satelliteId);
-
-            if (isConjunction) {
-                console.log(
-                    satelliteId,
-                    mesh.position.x,
-                    mesh.position.y,
-                    mesh.position.z
-                );
-
-
-
-                const pulse =
-                    0.5 + 0.5 * Math.sin(
-                        performance.now() * 0.005
-                    );
-
-                material.color.setRGB(
-                    1,
-                    pulse * 0.25,
-                    pulse * 0.25
-                );
-            }            else if (satelliteId === selectedId) {
-
-                const pulse =
-                    0.7 + 0.3 * Math.sin(
-                        performance.now() * 0.005
-                    );
-
-                material.color.setRGB(
-                    pulse,
-                    0,
-                    pulse
-                );
+            const risk = riskMap.get(satelliteId);
+            if (risk !== undefined) {
+                const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
+                const [r, g, b] = riskToColor(risk, pulse);
+                material.color.setRGB(r, g, b);
+                continue;
             }
-            else {
 
-                material.color.set(
-                    orbitColor(
-                        satellites[i].state.position as [
-                            number,
-                            number,
-                            number
-                        ]
-                    )
-                );
-            }
+            material.color.set(
+                orbitColor(satellites[i].state.position as [number, number, number])
+            );
         }
     });
 
     const satellites = engine.getSatellites();
     const selectedId = engine.getSelectedSatelliteId();
-
-    const ids = satellites.map(s => s.id);
-
-    console.log(
-        "Satellite Count:",
-        ids.length
-    );
-
-    console.log(
-        "Unique IDs:",
-        new Set(ids).size
-    );
-
-    const duplicates = ids.filter(
-        (id, index) => ids.indexOf(id) !== index
-    );
-
-    console.log(
-        "Duplicate IDs:",
-        [...new Set(duplicates)]
-    );
-
-    console.log("SATELLITES COMPONENT RENDERED");
-    console.log("Selected ID:", selectedId);
-
+    const riskMap = getConjunctionRiskMap(engine);
 
     return (
         <group ref={groupRef}>
             {satellites.map((sat) => {
                 const isSelected = sat.id === selectedId;
+                const risk = riskMap.get(sat.id);
 
-                const isConjunction =
-                    engine
-                        .getState()
-                        .activeConjunctions
-                        .some(
-                            c =>
-                                c.satelliteAId === sat.id ||
-                                c.satelliteBId === sat.id
-                        );
-
-                if (isConjunction) {
-                    console.log(
-                        "RED SAT:",
-                        sat.id,
-                        sat.name
-                    );
-                }
-
-                if (isSelected) {
-                    console.log("SELECTED SAT:", sat.name);
-                }
-
-
+                const [r, g, b] = risk !== undefined
+                    ? riskToColor(risk)
+                    : [0, 0, 0];
 
                 return (
                     <mesh
@@ -239,26 +149,14 @@ export function Satellites() {
                             engine.selectSatellite(sat.id);
                         }}
                     >
-                        <sphereGeometry
-                            args={[
-                                MARKER_RADIUS,
-                                8,
-                                8,
-                            ]}
-                        />
+                        <sphereGeometry args={[MARKER_RADIUS, 8, 8]} />
                         <meshBasicMaterial
                             color={
                                 isSelected
                                     ? '#fbbf24'
-                                    : isConjunction
-                                        ? '#ff3333'
-                                        : orbitColor(
-                                            sat.state.position as [
-                                                number,
-                                                number,
-                                                number
-                                            ]
-                                        )
+                                    : risk !== undefined
+                                        ? `rgb(${r * 255}, ${g * 255}, ${b * 255})`
+                                        : orbitColor(sat.state.position as [number, number, number])
                             }
                         />
                     </mesh>
