@@ -36,6 +36,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 420000, // kg
             dragCoefficient: 2.2,
             crossSectionArea: 2000, // m^2
+            radiationPressureCoefficient: 1.3,
         }
     },
     {
@@ -52,6 +53,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 1630,
             dragCoefficient: 2.0,
             crossSectionArea: 15,
+            radiationPressureCoefficient: 1.3,
         }
     },
     {
@@ -68,6 +70,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 5960,
             dragCoefficient: 2.0,
             crossSectionArea: 45,
+            radiationPressureCoefficient: 1.3,
         }
     }
 ];

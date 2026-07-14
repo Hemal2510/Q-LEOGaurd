@@ -9,6 +9,7 @@ import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
+import { SolarRadiationPressure } from '../core/physics/forces/SolarRadiationPressure';
 
 export type SimListener = (state: SimulationState) => void;
 
@@ -67,6 +68,7 @@ export class SimulationEngine {
             new GravityForce(),
             new SunGravityForce(),
             new MoonGravityForce(),
+            new SolarRadiationPressure(),
 
         ];
 
