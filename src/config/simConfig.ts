@@ -4,17 +4,18 @@ import type { Satellite } from '../models/satellite';
  * Default simulation settings.
  */
 export const SIM_DEFAULT_CONFIG = {
-    // Max step size for RK4 propagation in seconds
     maxTimeStep: 60,
-    // Minimum time step size
     minTimeStep: 0.001,
-    // Default play/pause state
     startPaused: false,
-    // Default timescale (1 second real time = 60 seconds simulation time)
     defaultTimeScale: 60,
-    // R3F scaling factor (scales real meters down for visual WebGL units to prevent float jitter)
-    // 1 WebGL unit = 1,000,000 meters (1,000 km)
     distanceScale: 1e-6,
+
+    defaultProperties: {
+        mass: 100,
+        dragCoefficient: 2.2,
+        crossSectionArea: 1.0,
+        radiationPressureCoefficient: 1.2,
+    },
 };
 
 /**
@@ -36,6 +37,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 420000, // kg
             dragCoefficient: 2.2,
             crossSectionArea: 2000, // m^2
+            radiationPressureCoefficient: 1.3,
         }
     },
     {
@@ -52,6 +54,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 1630,
             dragCoefficient: 2.0,
             crossSectionArea: 15,
+            radiationPressureCoefficient: 1.3,
         }
     },
     {
@@ -68,6 +71,7 @@ export const DEFAULT_SATELLITES: Satellite[] = [
             mass: 5960,
             dragCoefficient: 2.0,
             crossSectionArea: 45,
+            radiationPressureCoefficient: 1.3,
         }
     }
 ];

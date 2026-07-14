@@ -32,6 +32,7 @@ export interface PhysicalProperties {
     mass?: number;                // Mass of the satellite in kg
     dragCoefficient?: number;     // Cd, coefficient of atmospheric drag (dimensionless)
     crossSectionArea?: number;    // Area facing relative wind or radiation in m^2
+    radiationPressureCoefficient?: number;  //Coefficient of solar-radiation interaction
 }
 
 export type ObjectCategory = 'satellite' | 'debris' | 'rocket-body';
