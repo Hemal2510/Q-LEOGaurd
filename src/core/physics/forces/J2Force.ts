@@ -2,7 +2,7 @@ import type { OrbitalState, PhysicalProperties } from '../../../models/satellite
 import type { Vector3D } from '../../math/vector';
 import { magnitude } from '../../math/vector';
 import type { ForceModel } from './forceModel';
-import { EARTH_MU, EARTH_J2, EARTH_RADIUS_EQUATORIAL } from '../../../config/constants';
+import { EARTH_MU, EARTH_J2, EARTH_RADIUS } from '../../../config/constants';
 
 export class J2Force implements ForceModel {
     readonly name = 'J2 Oblateness Perturbation';
@@ -26,7 +26,7 @@ export class J2Force implements ForceModel {
 
         const rMag2 = rMag * rMag;
         const rMag4 = rMag2 * rMag2;
-        const reMag2 = EARTH_RADIUS_EQUATORIAL * EARTH_RADIUS_EQUATORIAL;
+        const reMag2 = EARTH_RADIUS * EARTH_RADIUS;
 
         const k = 1.5 * EARTH_J2 * EARTH_MU * reMag2 / rMag4;
 
