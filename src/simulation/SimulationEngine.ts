@@ -10,6 +10,8 @@ import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
 import { SolarRadiationPressure } from '../core/physics/forces/SolarRadiationPressure';
+import { J2Force } from '../core/physics/forces/j2Force';
+
 
 export type SimListener = (state: SimulationState) => void;
 
