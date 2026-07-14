@@ -69,6 +69,7 @@ export class SimulationEngine {
             new SunGravityForce(),
             new MoonGravityForce(),
             new SolarRadiationPressure(),
+            new J2Force(),
 
         ];
 
