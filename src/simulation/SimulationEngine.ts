@@ -5,6 +5,7 @@ import type { ForceModel } from '../core/physics/forces/ForceModel';
 import { GravityForce } from '../core/physics/forces/GravityForce';
 import {SunGravityForce} from '../core/physics/forces/ThirdBodyForces';
 import {MoonGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {AtmosphericDragForce} from "../core/physics/forces/AtmosphericDragForce.ts";
 import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
@@ -72,6 +73,7 @@ export class SimulationEngine {
             new MoonGravityForce(),
             new SolarRadiationPressure(),
             new J2Force(),
+            new AtmosphericDragForce(),
 
         ];
 
