@@ -1,6 +1,6 @@
 import type { Vector3D } from '../math/vector';
+import { ASTRONOMICAL_UNIT } from '../../config/constants';
 
-const AU = 149_597_870_700; // meters
 const YEAR_SECONDS = 365.25 * 86400;
 
 /**
@@ -13,8 +13,8 @@ export function getSunPosition(epoch: number): Vector3D {
         YEAR_SECONDS;
 
     return [
-        AU * Math.cos(theta),
-        AU * Math.sin(theta),
+        ASTRONOMICAL_UNIT * Math.cos(theta),
+        ASTRONOMICAL_UNIT * Math.sin(theta),
         0,
     ];
 }

@@ -1,14 +1,20 @@
 // src/simulation/SimulationEngine.ts
 
 import type { Satellite } from '../models/satellite';
-import type { ForceModel } from '../core/physics/forces/forceModel';
-import { GravityForce } from '../core/physics/forces/gravityForce';
+import type { ForceModel } from '../core/physics/forces/ForceModel';
+import { GravityForce } from '../core/physics/forces/GravityForce';
+import {SunGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {MoonGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {AtmosphericDragForce} from "../core/physics/forces/AtmosphericDragForce.ts";
 import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
 import { ConjunctionDetector } from './ConjunctionDetector';
 import type { ConjunctionEvent } from '../models/conjunction';
+import { SolarRadiationPressure } from '../core/physics/forces/SolarRadiationPressure';
+import { J2Force } from '../core/physics/forces/J2Force.ts';
+
 
 export type SimListener = (state: SimulationState) => void;
 
@@ -74,7 +80,15 @@ export class SimulationEngine {
             );
         }
 
-        this.forces = [new GravityForce()];
+        this.forces = [
+            new GravityForce(),
+            new SunGravityForce(),
+            new MoonGravityForce(),
+            new SolarRadiationPressure(),
+            new J2Force(),
+            new AtmosphericDragForce(),
+
+        ];
 
         this.timeController.reset();
 
