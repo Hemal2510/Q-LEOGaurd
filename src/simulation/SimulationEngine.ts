@@ -1,14 +1,31 @@
+// src/simulation/SimulationEngine.ts
+
 import type { Satellite } from '../models/satellite';
 import type { ForceModel } from '../core/physics/forces/ForceModel';
 import { GravityForce } from '../core/physics/forces/GravityForce';
-import { AtmosphericDragForce } from '../core/physics/forces/AtmosphericDragForce';
+import {SunGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {MoonGravityForce} from '../core/physics/forces/ThirdBodyForces';
+import {AtmosphericDragForce} from "../core/physics/forces/AtmosphericDragForce.ts";
 import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
+import { SolarRadiationPressure } from '../core/physics/forces/SolarRadiationPressure';
+import { J2Force } from '../core/physics/forces/J2Force.ts';
+
 
 export type SimListener = (state: SimulationState) => void;
 
+/**
+ * SimulationEngine — singleton coordinator for the orbital simulation.
+ * Owns the satellite catalog, force model registry, and animation loop.
+ * Delegates all time management to TimeController.
+ *
+ * High-frequency satellite positions are read directly via getSatellites()
+ * by Three.js components — bypassing React state to prevent render storms.
+ * Low-frequency UI state (pause, timescale, forces) is broadcast via
+ * the observer pattern to React subscribers.
+ */
 export class SimulationEngine {
     private static instance: SimulationEngine | null = null;
 
@@ -31,6 +48,12 @@ export class SimulationEngine {
         return SimulationEngine.instance;
     }
 
+    // ─── Lifecycle ─────────────────────────────────────────────────────────────
+
+    /**
+     * Resets simulation to initial configuration.
+     * Stops the loop, reloads default satellites, resets time.
+     */
     public reset(): void {
         this.stopLoop();
 
@@ -46,7 +69,12 @@ export class SimulationEngine {
 
         this.forces = [
             new GravityForce(),
+            new SunGravityForce(),
+            new MoonGravityForce(),
+            new SolarRadiationPressure(),
+            new J2Force(),
             new AtmosphericDragForce(),
+
         ];
 
         this.timeController.reset();
@@ -56,6 +84,15 @@ export class SimulationEngine {
         this.startLoop();
     }
 
+    // ─── Observer ──────────────────────────────────────────────────────────────
+
+    /**
+     * Subscribes to low-frequency simulation state changes.
+     * Fires immediately with current state on subscription.
+     * Returns unsubscribe function for React useEffect cleanup.
+     *
+     * @param listener Callback receiving SimulationState snapshots
+     */
     public subscribe(listener: SimListener): () => void {
         this.listeners.add(listener);
         listener(this.getState());
@@ -64,11 +101,20 @@ export class SimulationEngine {
         };
     }
 
+    /**
+     * Broadcasts current state to all React subscribers.
+     * Only called on low-frequency events — never per frame.
+     */
     private notify(): void {
         const state = this.getState();
         this.listeners.forEach((l) => l(state));
     }
 
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns full simulation state snapshot for React UI consumption.
+     */
     public getState(): SimulationState {
         return {
             satellites: this.satellites,
@@ -87,10 +133,18 @@ export class SimulationEngine {
         };
     }
 
+    /**
+     * Direct satellite position getter for Three.js render loop.
+     * Bypasses React state entirely — no re-renders triggered.
+     */
     public getSatellites(): Satellite[] {
         return this.satellites;
     }
 
+    /**
+     * Current simulation epoch in seconds from t=0.
+     * Read by Earth.tsx every frame for rotation calculation.
+     */
     public getEpoch(): number {
         return this.timeController.getEpoch();
     }
@@ -113,10 +167,20 @@ export class SimulationEngine {
         return this.selectedSatelliteId;
     }
 
+    /**
+     * Returns active force model instances.
+     * Used by OrbitPaths and research panels.
+     */
     public getForceModels(): ForceModel[] {
         return this.forces;
     }
 
+    /**
+     * Replaces the satellite catalog with live TLE data.
+     * Called once on app startup after TLE fetch completes.
+     *
+     * @param satellites Array of satellites from loadTLESatellites()
+     */
     public loadSatellites(satellites: Satellite[]): void {
         this.initialSatellites = JSON.parse(
             JSON.stringify(satellites)
@@ -129,6 +193,12 @@ export class SimulationEngine {
         this.notify();
     }
 
+    // ─── Controls ──────────────────────────────────────────────────────────────
+
+    /**
+     * Toggles play/pause. Starts or stops the animation loop.
+     * Guards against StrictMode double-mount by checking state first.
+     */
     public togglePause(): void {
         this.timeController.togglePause();
         if (!this.timeController.isPaused()) {
@@ -139,11 +209,23 @@ export class SimulationEngine {
         this.notify();
     }
 
+    /**
+     * Updates simulation time scale multiplier.
+     * Clamped to [0.1, 100000] inside TimeController.
+     *
+     * @param scale Multiplier — 60 means 1 real second = 60 sim seconds
+     */
     public setTimeScale(scale: number): void {
         this.timeController.setTimeScale(scale);
         this.notify();
     }
 
+    /**
+     * Toggles a force model on or off by name.
+     * Allows runtime physics experimentation without restart.
+     *
+     * @param name Force model name as defined by ForceModel.name
+     */
     public toggleForce(name: string): void {
         const force = this.forces.find((f) => f.name === name);
         if (force) {
@@ -152,6 +234,16 @@ export class SimulationEngine {
         }
     }
 
+    // ─── Propagation ───────────────────────────────────────────────────────────
+
+    /**
+     * Advances all satellites by one RK4 time step.
+     * Called by the animation loop with sub-step sizes from TimeController.
+     * Epoch advancement is handled separately via timeController.advanceEpoch()
+     * to keep time management fully owned by TimeController.
+     *
+     * @param dt Simulation delta time in seconds — must be positive
+     */
     public tick(dt: number): void {
         if (dt <= 0) return;
 
@@ -165,6 +257,18 @@ export class SimulationEngine {
         }
     }
 
+    // ─── Animation Loop ────────────────────────────────────────────────────────
+
+    /**
+     * Starts the requestAnimationFrame loop.
+     * Guard prevents duplicate loops if called while already running.
+     *
+     * Each frame:
+     *  1. TimeController computes RK4-stable sub-steps for this frame
+     *  2. Each sub-step propagates all satellites via RK4
+     *  3. Each sub-step advances the epoch in TimeController
+     *  4. Loop schedules next frame
+     */
     private startLoop(): void {
         if (this.animationFrameId !== null) return;
 
@@ -174,6 +278,7 @@ export class SimulationEngine {
                 return;
             }
 
+            // Get RK4-stable sub-steps for this frame from TimeController
             const steps = this.timeController.computeSteps(now);
 
             for (const step of steps) {
@@ -189,6 +294,9 @@ export class SimulationEngine {
         this.animationFrameId = requestAnimationFrame(run);
     }
 
+    /**
+     * Cancels the active animation frame and clears the reference.
+     */
     private stopLoop(): void {
         if (this.animationFrameId !== null) {
             cancelAnimationFrame(this.animationFrameId);
