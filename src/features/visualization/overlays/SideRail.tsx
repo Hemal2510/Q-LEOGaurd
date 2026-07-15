@@ -20,6 +20,7 @@ const RAIL_BUTTONS: {
     { id: 'settings',  icon: '⚙', label: 'Settings' },
 ];
 
+
 /**
  * SideRail — vertical icon button strip on the right edge of the canvas.
  * Each button toggles a corresponding SideDrawer panel.

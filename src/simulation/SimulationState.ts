@@ -1,6 +1,7 @@
 // src/simulation/SimulationState.ts
 
 import type { Satellite } from '../models/satellite';
+import type { ConjunctionEvent } from '../models/conjunction';
 
 /**
  * Lightweight snapshot of force model state for UI consumption.
@@ -39,4 +40,6 @@ export interface SimulationState {
 
     selectedSatelliteId: string | null;
 
+    /** Currently active conjunction events */
+    activeConjunctions: ConjunctionEvent[];
 }

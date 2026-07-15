@@ -10,6 +10,8 @@ import { propagateRK4 } from '../core/physics/propagator';
 import { DEFAULT_SATELLITES, SIM_DEFAULT_CONFIG } from '../config/simConfig';
 import { TimeController } from './TimeController';
 import type { SimulationState } from './SimulationState';
+import { ConjunctionDetector } from './ConjunctionDetector';
+import type { ConjunctionEvent } from '../models/conjunction';
 import { SolarRadiationPressure } from '../core/physics/forces/SolarRadiationPressure';
 import { J2Force } from '../core/physics/forces/J2Force.ts';
 
@@ -36,6 +38,17 @@ export class SimulationEngine {
     private listeners: Set<SimListener>     = new Set();
     private animationFrameId: number | null = null;
     private timeController: TimeController  = new TimeController();
+    private conjunctionDetector: ConjunctionDetector =
+        new ConjunctionDetector();
+    private lastConjunctionUpdate = 0;
+
+    private activeConjunctions: ConjunctionEvent[] = [];
+
+    private catalogVersion = 0;
+
+    public getCatalogVersion(): number {
+        return this.catalogVersion;
+    }
 
     private constructor() {
         this.reset();
@@ -78,6 +91,8 @@ export class SimulationEngine {
         ];
 
         this.timeController.reset();
+
+        this.activeConjunctions = [];
 
         this.notify();
 
@@ -130,6 +145,7 @@ export class SimulationEngine {
                 name:    f.name,
                 enabled: f.enabled,
             })),
+            activeConjunctions: this.activeConjunctions
         };
     }
 
@@ -182,6 +198,19 @@ export class SimulationEngine {
      * @param satellites Array of satellites from loadTLESatellites()
      */
     public loadSatellites(satellites: Satellite[]): void {
+
+        console.log(
+            "Total satellites loaded:",
+            satellites.length
+        );
+
+        console.log(
+            "Unique IDs:",
+            new Set(
+                satellites.map(s => s.id)
+            ).size
+        );
+
         this.initialSatellites = JSON.parse(
             JSON.stringify(satellites)
         );
@@ -189,6 +218,9 @@ export class SimulationEngine {
         this.satellites = JSON.parse(
             JSON.stringify(satellites)
         );
+
+        this.catalogVersion++;
+
 
         this.notify();
     }
@@ -255,6 +287,27 @@ export class SimulationEngine {
                 this.forces
             );
         }
+
+        const now = performance.now();
+
+        if (now - this.lastConjunctionUpdate > 5000) {
+
+            this.activeConjunctions =
+                this.conjunctionDetector.detect(
+                    this.satellites,
+                    this.timeController.getSimulationTimestamp()
+                );
+
+            this.lastConjunctionUpdate = now;
+
+            this.notify();
+        }
+
+        console.log(
+            "Conjunctions:",
+            this.activeConjunctions.length
+        );
+
     }
 
     // ─── Animation Loop ────────────────────────────────────────────────────────

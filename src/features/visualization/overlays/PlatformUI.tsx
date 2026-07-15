@@ -7,8 +7,9 @@ import { Topbar } from './Topbar';
 import { BottomBar } from './BottomBar';
 import { SideRail } from './SideRail';
 import { SideDrawer } from './SideDrawer';
+import {ConjunctionDrawer} from "./ConjunctionDrawer";
 
-type DrawerType = 'satellites' | 'forces' | 'settings' | null;
+type DrawerType = 'satellites' | 'forces' | 'settings' | 'conjunctions' | null;
 
 export function PlatformUI() {
     const engine = SimulationEngine.getInstance();
@@ -30,10 +31,20 @@ export function PlatformUI() {
             pointerEvents: 'none',
             zIndex: 10,
         }}>
-            <Topbar simState={simState} />
+            <Topbar
+                simState={simState}
+                onOpenConjunctions={() =>
+                    setActiveDrawer('conjunctions')
+                }
+            />
             <SideRail activeDrawer={activeDrawer} onToggle={toggleDrawer} />
             <SideDrawer activeDrawer={activeDrawer} simState={simState} />
             <BottomBar simState={simState} />
+            <ConjunctionDrawer
+                isOpen={activeDrawer === 'conjunctions'}
+                onClose={() => setActiveDrawer(null)}
+                simState={simState}
+            />
         </div>
     );
 }

@@ -4,7 +4,12 @@ import { useCallback } from 'react';
 import { SimulationEngine } from '../../../simulation/SimulationEngine';
 import type { SimulationState } from '../../../simulation/SimulationState';
 
-type DrawerType = 'satellites' | 'forces' | 'settings' | null;
+type DrawerType =
+    'satellites' |
+    'forces' |
+    'settings' |
+    'conjunctions' |
+    null;
 
 const TIME_SCALES = [1, 10, 60, 300, 600, 3600];
 
@@ -26,6 +31,13 @@ interface SideDrawerProps {
 export function SideDrawer({ activeDrawer, simState }: SideDrawerProps) {
     const engine = SimulationEngine.getInstance();
 
+
+    const sideDrawerOpen =
+        activeDrawer === 'satellites' ||
+        activeDrawer === 'forces' ||
+        activeDrawer === 'settings';
+
+
     const handleToggleForce = useCallback((name: string) => {
         engine.toggleForce(name);
     }, []);
@@ -37,7 +49,7 @@ export function SideDrawer({ activeDrawer, simState }: SideDrawerProps) {
     return (
         <div style={{
             position: 'absolute',
-            right: activeDrawer ? 58 : -300,
+            right: sideDrawerOpen ? 58 : -300,
             top: '50%',
             transform: 'translateY(-50%)',
             width: 260,
@@ -47,7 +59,7 @@ export function SideDrawer({ activeDrawer, simState }: SideDrawerProps) {
             borderRadius: 12,
             padding: '14px 16px',
             backdropFilter: 'blur(12px)',
-            pointerEvents: activeDrawer ? 'auto' : 'none',
+            pointerEvents: sideDrawerOpen ? 'auto' : 'none',
             transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             overflowY: 'auto',
             zIndex: 19,
