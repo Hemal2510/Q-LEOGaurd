@@ -1,5 +1,5 @@
 import type { Vector3D } from '../core/math/vector';
-import type { ForceModel } from '../core/physics/forces/forceModel';
+import type { ForceModel } from '../core/physics/forces/ForceModel';
 /**
  * Classical Keplerian orbital elements.
  * Extremely useful for analytical descriptions of orbits.
@@ -32,6 +32,7 @@ export interface PhysicalProperties {
     mass?: number;                // Mass of the satellite in kg
     dragCoefficient?: number;     // Cd, coefficient of atmospheric drag (dimensionless)
     crossSectionArea?: number;    // Area facing relative wind or radiation in m^2
+    radiationPressureCoefficient?: number;  //Coefficient of solar-radiation interaction
 }
 
 export type ObjectCategory = 'satellite' | 'debris' | 'rocket-body';
